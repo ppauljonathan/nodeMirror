@@ -1,0 +1,66 @@
+*{
+    margin: unset;
+    padding: unset;
+    text-align: center;
+}
+
+body{
+    width: 100vw;
+    height: 100vh;
+}
+
+.titlebar{
+    width: 100vw;
+    height: 10vh;
+    background-color: rgb(99, 128, 255);
+}
+
+.centered{
+    top: 50%;left: 50%;
+    transform: translate(-50%,-50%);
+}
+
+.title{
+    width: fit-content;
+    height: fit-content;
+    position: relative;
+}
+
+.join{
+    position: relative;
+    width: fit-content;
+    height: fit-content;
+    top: 30%;
+}
+
+.join>*{
+    margin: 0.2rem;
+}
+
+.host{
+    position: relative;
+    width: fit-content;
+    height: fit-content;
+    top: 40%;
+}
+
+.btn{
+    background-color: rgb(99, 128, 255);
+    padding: 0.5rem;
+    width: fit-content;
+    height: fit-content;
+    border-radius: 0.5rem;
+}
+
+#roomId{
+    font-size: 3vh;
+    width: 70vw;
+    padding: 0.5rem;
+}
+
+#video,#shared{
+    position: relative;
+    top: 2%;
+    width: 90vw;
+    border: 1px solid black;
+}

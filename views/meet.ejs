@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NodeMirror:room</title>
+    <link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <%if(admin){%>
+        <p>Share the following link for others to see screen : <%=meetId%></p>
+        <div class="btn" onclick="share()">Start Sharing</div><br>
+        <div class="btn" onclick="stop()">Stop Sharing</div>
+        <video id="video" autoplay></video>
+    <%}else{%>
+        <p>You are in meeting room with id : <%=meetId%></p>
+        <img id="shared">
+    <%}%>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
+    <script>
+        const socket=io();
+        const isAdmin=JSON.parse('<%-JSON.parse(admin)%>');
+        const meetId='<%-JSON.stringify(meetId)%>';
+        const videoElement=document.getElementById('video');
+        const imgElement=document.getElementById('shared');
+        let id;
+        socket.emit('startedMeeting',meetId)
+        if(isAdmin){
+            function share(){
+                navigator.mediaDevices.getDisplayMedia()
+                .then(source=>{
+                    videoElement.srcObject=source;
+                    id=setInterval(()=>{
+                        html2canvas(
+                            videoElement,
+                            {
+                                allowTaint:true,
+                                useCORS:true
+                            }
+                        )
+                        .then(canvas=>{
+                            data=canvas.toDataURL('image/png',0.5);
+                            socket.emit('sentMsg',data);
+                        })
+                        .catch(err=>{
+                            throw(err);
+                        })
+                    },500)
+                })
+                .catch(err=>{
+                    console.log(error);
+                })
+            }
+            function stop(){
+                let tracks=videoElement.srcObject.getTracks();
+                tracks.forEach(track=>track.stop());
+                videoElement.srcObject=null
+                clearInterval(id);
+            }
+        }
+        else{
+            socket.on('toAll',msg=>{
+                imgElement.src=msg;
+            })
+        }
+    </script>
+    <script>
+
+    </script>
+</body>
+</html>

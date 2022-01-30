@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Feature-Policy" content="display-capture *">
     <title>NodeMirror:room</title>
     <link rel="stylesheet" href="/index.css">
 </head>
@@ -12,57 +13,64 @@
         <p>Share the following link for others to see screen : <%=meetId%></p>
         <div class="btn" onclick="share()">Start Sharing</div><br>
         <div class="btn" onclick="stop()">Stop Sharing</div>
-        <video id="video" autoplay></video>
     <%}else{%>
         <p>You are in meeting room with id : <%=meetId%></p>
-        <img id="shared">
     <%}%>
+    <video id="video" autoplay></video>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
+    <!-- <script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
+    -->
+    <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
     <script>
         const socket=io();
+        let peer=new Peer();
         const isAdmin=JSON.parse('<%-JSON.parse(admin)%>');
         const meetId='<%-JSON.stringify(meetId)%>';
         const videoElement=document.getElementById('video');
-        const imgElement=document.getElementById('shared');
-        let id;
-        socket.emit('startedMeeting',meetId)
+        let isSharing=false;
+        peer.on('open',id=>{
+            socket.emit('joinedMeeting',{
+                meetId:meetId,
+                userId:id
+            })
+        })
         if(isAdmin){
+            const participants=[];
+            socket.on('addParticipant',data=>{
+                participants.push(data.userId);
+                if(participants.length>1){
+                    peer.connect(data.userId);
+                }
+                if(isSharing){
+                    peer.call(data.userId,videoElement.srcObject);
+                }
+            })
             function share(){
+                isSharing=true;
                 navigator.mediaDevices.getDisplayMedia()
-                .then(source=>{
-                    videoElement.srcObject=source;
-                    id=setInterval(()=>{
-                        html2canvas(
-                            videoElement,
-                            {
-                                allowTaint:true,
-                                useCORS:true
-                            }
-                        )
-                        .then(canvas=>{
-                            data=canvas.toDataURL('image/png',0.5);
-                            socket.emit('sentMsg',data);
-                        })
-                        .catch(err=>{
-                            throw(err);
-                        })
-                    },500)
+                .then(data=>{
+                    videoElement.srcObject=data;
+                    participants.forEach(participant=>{
+                        peer.call(participant,data);
+                    })
                 })
                 .catch(err=>{
-                    console.log(error);
+                    log(err);
                 })
             }
             function stop(){
-                let tracks=videoElement.srcObject.getTracks();
-                tracks.forEach(track=>track.stop());
-                videoElement.srcObject=null
-                clearInterval(id);
+                isSharing=false;
+                tracks=videoElement.srcObject.getTracks();
+                tracks.forEach(track=>{track.stop();})
+                videoElement.srcObject=null;
             }
         }
         else{
-            socket.on('toAll',msg=>{
-                imgElement.src=msg;
+            peer.on('call',(call)=>{
+                call.answer(null);
+                call.on('stream',stream=>{
+                    videoElement.srcObject=stream;
+                })
             })
         }
     </script>

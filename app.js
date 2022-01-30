@@ -27,10 +27,8 @@ server.listen(PORT,()=>{console.log(`server listening on http://localhost:${PORT
 const io=new Server(server);
 
 io.on('connection',(socket)=>{
-    socket.on('startedMeeting',meetId=>{
-        socket.join(meetId);
-    })
-    socket.on('sentMsg',msg=>{
-        io.sockets.in([...socket.rooms][1]).emit('toAll',msg);
+    socket.on('joinedMeeting',data=>{
+        socket.join(data.meetId);
+        io.in(data.meetId).emit('addParticipant',{userId:data.userId});
     })
 })
